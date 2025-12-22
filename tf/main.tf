@@ -92,6 +92,13 @@ resource "aws_instance" "main" {
       curl \
       openssh-client
 
+    GO_VERSION="1.25.5"
+    GO_TARBALL="go$${GO_VERSION}.linux-amd64.tar.gz"
+    cd /tmp
+    curl -fsSL "https://go.dev/dl/$${GO_TARBALL}" -o "$${GO_TARBALL}"
+    rm -rf /usr/local/go
+    tar -C /usr/local -xzf "$${GO_TARBALL}"
+
     USERNAME="ubuntu"
     HOME_DIR="/home/$${USERNAME}"
     SSH_DIR="$${HOME_DIR}/.ssh"
@@ -122,10 +129,12 @@ resource "aws_instance" "main" {
     sudo -u "$USERNAME" -H bash <<'EOS'
       set -euxo pipefail
 
+      # For Go
+      mkdir -p "$HOME/go"
+      echo 'export PATH=/usr/local/go/bin:$PATH' >> "$HOME/.profile"
+
       cd "$HOME"
-
       git clone git@github.com:mi-wada/tcpip.git
-
       git config --global user.email '49638956+mi-wada@users.noreply.github.com'
       git config --global user.name 'Mitsuaki Wada'
     EOS
