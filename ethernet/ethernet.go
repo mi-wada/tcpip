@@ -19,7 +19,7 @@ const (
 
 func Unmarshal(frame []byte) (Header, []byte, error) {
 	if len(frame) < 14 {
-		return Header{}, nil, fmt.Errorf("frame too short")
+		return Header{}, nil, fmt.Errorf("frame too short, ethernet header missing")
 	}
 
 	var h Header
