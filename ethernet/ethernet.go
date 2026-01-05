@@ -29,3 +29,12 @@ func Unmarshal(frame []byte) (Header, []byte, error) {
 
 	return h, frame[14:], nil
 }
+
+func Marshal(header Header, payload []byte) []byte {
+	buf := make([]byte, 14+len(payload))
+	copy(buf[0:6], header.Dst[:])
+	copy(buf[6:12], header.Src[:])
+	binary.BigEndian.PutUint16(buf[12:14], header.Type)
+	copy(buf[14:], payload)
+	return buf
+}

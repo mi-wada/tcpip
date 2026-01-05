@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/mi-wada/tcpip/arp"
 	"github.com/mi-wada/tcpip/ethernet"
 	"github.com/mi-wada/tcpip/util"
 )
@@ -23,6 +24,7 @@ type ifreq struct {
 	flags uint16
 }
 
+// ping 192.168.10.3
 func main() {
 	// 1. TUN/TAPクローンデバイスをオープン
 	fd, err := os.OpenFile("/dev/net/tun", os.O_RDWR, 0)
@@ -59,9 +61,19 @@ func main() {
 		}
 		switch header.Type {
 		case ethernet.TypeARP:
-			// TODO: Handle ARP
 			log.Printf("ARP frame")
 			util.Dump(payload)
+			reply, err := arp.Handle(payload)
+			if err != nil {
+				panic(err)
+			}
+			header := ethernet.Header{
+				Dst:  header.Src,
+				Src:  [6]byte{0x02, 0x00, 0x00, 0x00, 0x00, 0x02},
+				Type: ethernet.TypeARP,
+			}
+			replyFrame := ethernet.Marshal(header, reply)
+			fd.Write(replyFrame)
 		case ethernet.TypeIPv4:
 			// TODO: Handle IPv4
 			log.Printf("IPv4 frame")
