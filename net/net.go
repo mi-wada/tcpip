@@ -18,6 +18,15 @@ func (c *Conn) Close() error {
 	panic("TODO: implement later")
 }
 
+const (
+	networkTCP = "tcp"
+	networkUDP = "udp"
+)
+
 func Dial(network, address string) (Conn, error) {
+	switch network {
+	case networkTCP:
+	case networkUDP:
+	}
 	panic("TODO: implement later")
 }
