@@ -9,6 +9,7 @@ import (
 
 	"github.com/mi-wada/tcpip/arp"
 	"github.com/mi-wada/tcpip/ethernet"
+	"github.com/mi-wada/tcpip/ip"
 	"github.com/mi-wada/tcpip/util"
 )
 
@@ -59,10 +60,10 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+
 		switch header.Type {
 		case ethernet.TypeARP:
-			log.Printf("ARP frame")
-			util.Dump(payload)
+			log.Print("ARP frame")
 			reply, err := arp.Handle(payload)
 			if err != nil {
 				panic(err)
@@ -75,12 +76,21 @@ func main() {
 			replyFrame := ethernet.Marshal(header, reply)
 			fd.Write(replyFrame)
 		case ethernet.TypeIPv4:
-			// TODO: Handle IPv4
-			log.Printf("IPv4 frame")
-			util.Dump(payload)
+			log.Print("IPv4 frame")
+			replyIPPacket, err := ip.Handle(payload)
+			if err != nil {
+				panic(err)
+			}
+			ethHeader := ethernet.Header{
+				Dst:  header.Src,
+				Src:  [6]byte{0x02, 0x00, 0x00, 0x00, 0x00, 0x02},
+				Type: ethernet.TypeIPv4,
+			}
+			replyFrame := ethernet.Marshal(ethHeader, replyIPPacket)
+			fd.Write(replyFrame)
 		case ethernet.TypeIPv6:
 			// TODO: Handle IPv6
-			log.Printf("IPv6 frame")
+			log.Print("IPv6 frame")
 			util.Dump(payload)
 		}
 	}
