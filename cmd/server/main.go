@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -25,7 +26,7 @@ type ifreq struct {
 	flags uint16
 }
 
-// ping 192.168.10.3
+// ping 192.168.10.2
 func main() {
 	// 1. TUN/TAPクローンデバイスをオープン
 	fd, err := os.OpenFile("/dev/net/tun", os.O_RDWR, 0)
@@ -64,6 +65,7 @@ func main() {
 		switch header.Type {
 		case ethernet.TypeARP:
 			log.Print("ARP frame")
+			util.Dump(payload)
 			reply, err := arp.Handle(payload)
 			if err != nil {
 				panic(err)
@@ -78,6 +80,9 @@ func main() {
 		case ethernet.TypeIPv4:
 			log.Print("IPv4 frame")
 			replyIPPacket, err := ip.Handle(payload)
+			if errors.Is(err, ip.ErrEmpty) {
+				continue
+			}
 			if err != nil {
 				panic(err)
 			}

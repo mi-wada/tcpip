@@ -2,31 +2,23 @@ package net
 
 import "io"
 
-type Conn struct{}
-
-var _ io.ReadWriteCloser = &Conn{}
-
-func (c *Conn) Read(b []byte) (int, error) {
-	panic("TODO: implement later")
-}
-
-func (c *Conn) Write(b []byte) (int, error) {
-	panic("TODO: implement later")
-}
-
-func (c *Conn) Close() error {
-	panic("TODO: implement later")
+type Conn interface {
+	io.ReadWriteCloser
 }
 
 const (
-	networkTCP = "tcp"
-	networkUDP = "udp"
+	networkTCP      = "tcp"
+	networkUDP      = "udp"
+	networkIPV4     = "ip4"
+	networkEthernet = "ethernet"
 )
 
 func Dial(network, address string) (Conn, error) {
 	switch network {
 	case networkTCP:
 	case networkUDP:
+	case networkIPV4:
+		return NewIPV4Conn(address)
 	}
 	panic("TODO: implement later")
 }

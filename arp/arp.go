@@ -6,7 +6,7 @@ import (
 )
 
 func Handle(payload []byte) ([]byte, error) {
-	p, err := unmarshal(payload)
+	p, err := Unmarshal(payload)
 	if err != nil {
 		return nil, err
 	}
@@ -22,10 +22,10 @@ func Handle(payload []byte) ([]byte, error) {
 		hlen:  6,
 		plen:  4,
 		op:    opReply,
-		// // 02:00:00:00:00:02
-		sha: [6]byte{0x02, 0x00, 0x00, 0x00, 0x00, 0x02},
+		// 02:00:00:00:00:02
+		Sha: [6]byte{0x02, 0x00, 0x00, 0x00, 0x00, 0x02},
 		spa: myIP,
-		tha: p.sha,
+		tha: p.Sha,
 		tpa: p.spa,
 	}
 
@@ -43,13 +43,30 @@ type packet struct {
 	hlen  byte
 	plen  byte
 	op    uint16
-	sha   [6]byte
+	Sha   [6]byte
 	spa   [4]byte
 	tha   [6]byte
 	tpa   [4]byte
 }
 
-func unmarshal(payload []byte) (packet, error) {
+func ARPRequestPayload(ipAddress [4]byte) []byte {
+	return marshal(
+		packet{
+			htype: 0x0001, // Ethernet
+			ptype: 0x0800, // IPv4
+			hlen:  6,
+			plen:  4,
+			op:    opRequest,
+			// 02:00:00:00:00:02
+			Sha: [6]byte{0x02, 0x00, 0x00, 0x00, 0x00, 0x02},
+			spa: [4]byte{192, 168, 10, 2},
+			tha: [6]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+			tpa: ipAddress,
+		},
+	)
+}
+
+func Unmarshal(payload []byte) (packet, error) {
 	// ARPパケット(IPv4 over Ethernet)は28バイト固定
 	if len(payload) < 28 {
 		return packet{}, fmt.Errorf("arp packet too short: %d", len(payload))
@@ -61,7 +78,7 @@ func unmarshal(payload []byte) (packet, error) {
 	p.hlen = payload[4]
 	p.plen = payload[5]
 	p.op = binary.BigEndian.Uint16(payload[6:8])
-	copy(p.sha[:], payload[8:14])
+	copy(p.Sha[:], payload[8:14])
 	copy(p.spa[:], payload[14:18])
 	copy(p.tha[:], payload[18:24])
 	copy(p.tpa[:], payload[24:28])
@@ -77,7 +94,7 @@ func marshal(p packet) []byte {
 	buf[4] = p.hlen
 	buf[5] = p.plen
 	binary.BigEndian.PutUint16(buf[6:8], p.op)
-	copy(buf[8:14], p.sha[:])
+	copy(buf[8:14], p.Sha[:])
 	copy(buf[14:18], p.spa[:])
 	copy(buf[18:24], p.tha[:])
 	copy(buf[24:28], p.tpa[:])

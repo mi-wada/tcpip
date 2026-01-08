@@ -9,7 +9,13 @@ import (
 	"sync/atomic"
 
 	"github.com/mi-wada/tcpip/icmp"
+	"github.com/mi-wada/tcpip/tcp"
 	"github.com/mi-wada/tcpip/udp"
+	"github.com/mi-wada/tcpip/util"
+)
+
+var (
+	ErrEmpty = errors.New("empty")
 )
 
 func Handle(payload []byte) ([]byte, error) {
@@ -46,7 +52,6 @@ func Handle(payload []byte) ([]byte, error) {
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("UDP Reply: %#v\n", reply)
 		ipHeader := Header{
 			Version:        4,
 			IHL:            5,
@@ -61,8 +66,31 @@ func Handle(payload []byte) ([]byte, error) {
 			Dst:            h.Src,
 		}
 		replyIPPacket = Marshal(ipHeader, reply)
+	case ProtocolTCP:
+		reply, err := tcp.Handle(payload, h.Src, h.Dst)
+		if errors.Is(err, tcp.ErrEmpty) {
+			return nil, ErrEmpty
+		}
+		if err != nil {
+			panic(err)
+		}
+		ipHeader := Header{
+			Version:        4,
+			IHL:            5,
+			TOS:            0,
+			TotalLen:       uint16(20 + len(reply)),
+			ID:             NewID(),
+			Flags:          0b010,
+			FragmentOffset: 0,
+			TTL:            64,
+			Protocol:       ProtocolTCP,
+			Src:            h.Dst,
+			Dst:            h.Src,
+		}
+		replyIPPacket = Marshal(ipHeader, reply)
 	default:
 		log.Printf("unsupported ip protocol: %d", h.Protocol)
+		util.Dump(payload)
 	}
 
 	return replyIPPacket, nil
@@ -71,6 +99,7 @@ func Handle(payload []byte) ([]byte, error) {
 const (
 	// https://datatracker.ietf.org/doc/html/rfc792
 	ProtocolICMP = 1
+	ProtocolTCP  = 6
 	// https://datatracker.ietf.org/doc/html/rfc768
 	ProtocolUDP = 17
 )
