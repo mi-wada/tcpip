@@ -45,7 +45,7 @@ func main() {
 		log.Fatalf("ioctl失敗: %v", errno)
 	}
 
-	fmt.Println("tap0 デバイスをListen中... (Ctrl+Cで終了)")
+	fmt.Println("tap0 デバイスをリスン中... (Ctrl+Cで終了)")
 
 	// 4. パケット読み込みループ
 	frame := make([]byte, 1514) // イーサネット最大1500 + ヘッダ14

@@ -6,44 +6,43 @@ import (
 )
 
 func Handle(payload []byte) ([]byte, error) {
-	p, err := unmarshal(payload)
+	p, err := Unmarshal(payload)
 	if err != nil {
 		return nil, err
 	}
-	reply := packet{
-		t:        typeEchoReply,
-		code:     0,
-		checksum: 0,
-		id:       p.id,
-		seq:      p.seq,
-		data:     p.data,
+	reply := Packet{
+		Type: TypeEchoReply,
+		Code: 0,
+		ID:   p.ID,
+		Seq:  p.Seq,
+		Data: p.Data,
 	}
-	return reply.marshal(), nil
+	return reply.Marshal(), nil
 }
 
 // Echo or Echo Reply Message
-type packet struct {
-	t        uint8
-	code     uint8
-	checksum uint16
-	id       uint16
-	seq      uint16
-	data     []byte
+type Packet struct {
+	Type     uint8
+	Code     uint8
+	Checksum uint16
+	ID       uint16
+	Seq      uint16
+	Data     []byte
 }
 
 const (
-	typeEchoReply = 0
-	typeEcho      = 8
+	TypeEchoReply = 0
+	TypeEcho      = 8
 )
 
-func (p packet) marshal() []byte {
-	buf := make([]byte, 8+len(p.data))
-	buf[0] = p.t
-	buf[1] = p.code
+func (p Packet) Marshal() []byte {
+	buf := make([]byte, 8+len(p.Data))
+	buf[0] = p.Type
+	buf[1] = p.Code
 	binary.BigEndian.PutUint16(buf[2:4], 0)
-	binary.BigEndian.PutUint16(buf[4:6], p.id)
-	binary.BigEndian.PutUint16(buf[6:8], p.seq)
-	copy(buf[8:], p.data)
+	binary.BigEndian.PutUint16(buf[4:6], p.ID)
+	binary.BigEndian.PutUint16(buf[6:8], p.Seq)
+	copy(buf[8:], p.Data)
 
 	binary.BigEndian.PutUint16(buf[2:4], checksum(buf))
 	return buf
@@ -60,17 +59,17 @@ func checksum(buf []byte) uint16 {
 	return ^uint16(sum)
 }
 
-func unmarshal(payload []byte) (packet, error) {
+func Unmarshal(payload []byte) (Packet, error) {
 	if len(payload) < 8 {
-		return packet{}, fmt.Errorf("ICMP packet too short: %d", len(payload))
+		return Packet{}, fmt.Errorf("ICMP packet too short: %d", len(payload))
 	}
 
-	return packet{
-		t:        payload[0],
-		code:     payload[1],
-		checksum: binary.BigEndian.Uint16(payload[2:4]),
-		id:       binary.BigEndian.Uint16(payload[4:6]),
-		seq:      binary.BigEndian.Uint16(payload[6:8]),
-		data:     payload[8:],
+	return Packet{
+		Type:     payload[0],
+		Code:     payload[1],
+		Checksum: binary.BigEndian.Uint16(payload[2:4]),
+		ID:       binary.BigEndian.Uint16(payload[4:6]),
+		Seq:      binary.BigEndian.Uint16(payload[6:8]),
+		Data:     payload[8:],
 	}, nil
 }
